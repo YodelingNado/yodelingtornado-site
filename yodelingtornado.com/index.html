@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Yodeling Tornado Hub</title>
+    <meta name="description" content="Personal hub for Plex + stats + links." />
+
+    <style>
+      :root{
+        --bg: #0b0d12;
+        --panel: rgba(255,255,255,0.06);
+        --panel2: rgba(255,255,255,0.09);
+        --text: rgba(255,255,255,0.92);
+        --muted: rgba(255,255,255,0.66);
+        --line: rgba(255,255,255,0.12);
+        --shadow: 0 20px 60px rgba(0,0,0,0.55);
+        --radius: 18px;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background:
+          radial-gradient(1000px 700px at 20% -10%, rgba(120, 70, 255, 0.25), transparent 55%),
+          radial-gradient(900px 650px at 90% 10%, rgba(0, 200, 255, 0.18), transparent 50%),
+          radial-gradient(900px 650px at 60% 120%, rgba(255, 120, 80, 0.12), transparent 55%),
+          var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 42px 16px 64px;
+      }
+
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .brand h1{
+        margin: 0;
+        font-size: clamp(26px, 3vw, 38px);
+        letter-spacing: -0.03em;
+      }
+
+      .brand p{
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      @media (max-width: 880px){
+        .grid { grid-template-columns: 1fr; }
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .card .inner { padding: 18px; }
+
+      .card h2{
+        margin: 0 0 10px;
+        font-size: 16px;
+        color: rgba(255,255,255,0.88);
+        letter-spacing: 0.01em;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      @media (max-width: 520px){
+        .actions { grid-template-columns: 1fr; }
+      }
+
+      a.btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        text-decoration: none;
+        padding: 14px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.06);
+        color: var(--text);
+        transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+      }
+
+      a.btn:hover{
+        transform: translateY(-1px);
+        background: rgba(255,255,255,0.085);
+        border-color: rgba(255,255,255,0.20);
+      }
+
+      .btn .left{
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .btn .title{
+        font-weight: 650;
+        letter-spacing: -0.01em;
+      }
+
+      .btn .sub{
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .btn .arrow{
+        font-size: 18px;
+        color: rgba(255,255,255,0.75);
+      }
+
+      .statsGrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .stat {
+        padding: 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.055);
+      }
+
+      .stat .num {
+        font-size: 26px;
+        font-weight: 750;
+        letter-spacing: -0.03em;
+        margin-bottom: 2px;
+      }
+
+      .stat .label {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 10px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .badge {
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+      }
+
+      .dot {
+        width: 9px; height: 9px; border-radius: 999px;
+        background: rgba(120, 255, 160, 0.9);
+        box-shadow: 0 0 0 4px rgba(120,255,160,0.18);
+      }
+
+      footer{
+        margin-top: 18px;
+        color: rgba(255,255,255,0.45);
+        font-size: 12px;
+        text-align: center;
+      }
+
+      code.inline {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 2px 6px;
+        color: rgba(255,255,255,0.82);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="brand">
+          <h1>Yodeling Tornado 🌪️</h1>
+          <p>Quick links + Plex library stats.</p>
+        </div>
+        <div class="pill" id="updatedPill">Loading stats…</div>
+      </header>
+
+      <div class="grid">
+        <!-- LEFT: links -->
+        <section class="card">
+          <div class="inner">
+            <h2>Links</h2>
+
+            <div class="actions">
+              <!-- EDIT THIS URL to your Plex -->
+              <a class="btn" href="https://YOUR-PLEX-URL-HERE" target="_blank" rel="noopener noreferrer">
+                <div class="left">
+                  <div class="title">Open Plex</div>
+                  <div class="sub">Watch stuff • manage library</div>
+                </div>
+                <div class="arrow">↗</div>
+              </a>
+
+              <!-- Optional: add more buttons -->
+              <a class="btn" href="https://example.com" target="_blank" rel="noopener noreferrer">
+                <div class="left">
+                  <div class="title">Another Site</div>
+                  <div class="sub">Put whatever here</div>
+                </div>
+                <div class="arrow">↗</div>
+              </a>
+            </div>
+
+            <div class="row">
+              <span class="badge"><span class="dot"></span> Hub online</span>
+              <span>Tip: edit <code class="inline">index.html</code> buttons anytime</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: stats -->
+        <aside class="card">
+          <div class="inner">
+            <h2>Library stats</h2>
+
+            <div class="statsGrid">
+              <div class="stat">
+                <div class="num" id="movies">—</div>
+                <div class="label">Movies</div>
+              </div>
+
+              <div class="stat">
+                <div class="num" id="shows">—</div>
+                <div class="label">Shows</div>
+              </div>
+
+              <div class="stat">
+                <div class="num" id="episodes">—</div>
+                <div class="label">Episodes</div>
+              </div>
+
+              <div class="stat">
+                <div class="num" id="anime">—</div>
+                <div class="label">Anime (series)</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <span id="statusText">Fetching <code class="inline">/stats.json</code>…</span>
+              <span id="errorText"></span>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <footer>
+        Edit stats in <code class="inline">stats.json</code>. Deploy → instant update.
+      </footer>
+    </div>
+
+    <script>
+      function setText(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function fmt(n) {
+        if (typeof n !== "number") return "—";
+        return n.toLocaleString();
+      }
+
+      async function loadStats() {
+        try {
+          const res = await fetch("/stats.json", { cache: "no-store" });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          const data = await res.json();
+
+          setText("movies", fmt(data.movies));
+          setText("shows", fmt(data.shows));
+          setText("episodes", fmt(data.episodes));
+          setText("anime", fmt(data.anime_series));
+
+          const updated = data.updated || "unknown";
+          setText("updatedPill", "Updated: " + updated);
+          setText("statusText", "Loaded ✓");
+          setText("errorText", "");
+        } catch (err) {
+          setText("updatedPill", "Stats unavailable");
+          setText("statusText", "Could not load /stats.json");
+          setText("errorText", "");
+          console.error(err);
+        }
+      }
+
+      loadStats();
+    </script>
+  </body>
+</html>
