@@ -231,7 +231,6 @@
           <div class="actions">
             <button class="btn primary" id="refresh">Refresh</button>
             <button class="btn" id="toggleManager">Manager</button>
-            <button class="btn" onclick="window.__softDelete('${r.id}')">Delete</button>
             <label class="badge" title="Show completed requests too">
               <input id="includeDone" type="checkbox" style="accent-color: #8fb5ff;" />
               Show done
@@ -431,6 +430,7 @@
           <div class="reqActions">
             <button class="btn primary" onclick="window.__setStatus('${r.id}','done')">Mark done</button>
             <button class="btn" onclick="window.__setStatus('${r.id}','open')">Re-open</button>
+            <button class="btn" onclick="window.__softDelete('${r.id}')">Delete</button>
           </div>
         ` : "";
 
