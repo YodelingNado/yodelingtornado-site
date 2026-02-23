@@ -231,6 +231,7 @@
           <div class="actions">
             <button class="btn primary" id="refresh">Refresh</button>
             <button class="btn" id="toggleManager">Manager</button>
+            <button class="btn" onclick="window.__softDelete('${r.id}')">Delete</button>
             <label class="badge" title="Show completed requests too">
               <input id="includeDone" type="checkbox" style="accent-color: #8fb5ff;" />
               Show done
@@ -458,6 +459,29 @@
       elList.innerHTML = `<section class="card"><div class="inner">Error: ${escapeHtml(err.message)}</div></section>`;
     }
 
+    async function softDelete(id) {
+        if (!loggedIn) { alert("Log in as manager first"); return; }
+        const token = getToken();
+        if (!token) { alert("Missing admin token"); return; }
+
+        if (!confirm("Soft-delete this request? (Can be restored later)")) return;
+
+        const res = await fetch(`/api/requests/${encodeURIComponent(id)}/delete`, {
+            method: "POST",
+            headers: { "X-Admin-Token": token }
+        });
+
+        if (!res.ok) {
+            const t = await res.text();
+            alert(`Delete failed: ${res.status}\n${t}`);
+            if (res.status === 401) setLoggedIn(false);
+            return;
+        }
+
+        await load();
+        }
+
+    window.__softDelete = softDelete;
     window.__setStatus = setStatus;
     refreshBtn.onclick = () => load().catch(showError);
 
