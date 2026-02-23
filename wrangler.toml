@@ -1,18 +1,9 @@
-name = "yodelingtornado-requests"
-main = "src/worker.js"
+name = "yodelingtornado-site"
 compatibility_date = "2026-02-22"
 
+pages_build_output_dir = "."
+
 [[d1_databases]]
-binding = "DB"
-database_name = "yodelingtornado-requests"
-database_id = "PUT_YOUR_D1_ID_HERE"
-
-[vars]
-# Secret shared between Apps Script and the Worker intake endpoint:
-INTAKE_SECRET = "CHANGE_ME_TO_A_LONG_RANDOM_STRING"
-
-# Simple admin token for marking items done on the website:
-ADMIN_TOKEN = "CHANGE_ME_TOO"
-
-[triggers]
-crons = ["0 * * * *"] # hourly cleanup
+binding = "DB"                  # this must match env.DB in your JS
+database_name = "yodelingtornado-requests"  # the D1 name you created
+database_id = "f6c95b5f-4183-4cbc-8656-a78ade8a935f"

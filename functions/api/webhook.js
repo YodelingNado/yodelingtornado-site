@@ -34,5 +34,7 @@ export async function onRequestPost({ request, env }) {
      VALUES (?, ?, ?, ?, ?, 'open', NULL)`
   ).bind(id, title, notes, nowMs, requested_date).run();
 
-  return Response.json({ ok: true, id });
+  return new Response(JSON.stringify({ ok: true, id }), {
+  headers: { "Content-Type": "application/json" },
+  });;
 }
