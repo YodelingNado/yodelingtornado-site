@@ -4,87 +4,392 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Requests • Yodeling Tornado</title>
+  <meta name="description" content="Media requests pulled from Cloudflare D1." />
+
   <style>
-    body { font-family: system-ui, Arial; background:#0b0f16; color:#e7eefc; margin:0; }
-    .wrap { max-width: 900px; margin: 40px auto; padding: 0 16px; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    .card { background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); border-radius: 16px; padding: 14px 16px; margin: 12px 0; }
-    .muted { color: rgba(231,238,252,0.65); font-size: 14px; }
-    button { background:#2a6bff; color:white; border:0; padding:10px 12px; border-radius:12px; cursor:pointer; }
-    button.secondary { background: rgba(255,255,255,0.10); }
-    input { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14); color:#e7eefc; padding:10px 12px; border-radius:12px; }
-    a { color:#9cc0ff; }
-    .badge { display:inline-block; padding:4px 8px; border-radius: 999px; font-size:12px; background: rgba(255,255,255,0.10); }
+    :root{
+      --bg: #0b0d12;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.09);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.66);
+      --line: rgba(255,255,255,0.12);
+      --shadow: 0 20px 60px rgba(0,0,0,0.55);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background:
+        radial-gradient(1000px 700px at 20% -10%, rgba(120, 70, 255, 0.25), transparent 55%),
+        radial-gradient(900px 650px at 90% 10%, rgba(0, 200, 255, 0.18), transparent 50%),
+        radial-gradient(900px 650px at 60% 120%, rgba(255, 120, 80, 0.12), transparent 55%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 42px 16px 64px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .brand h1{
+      margin: 0;
+      font-size: clamp(26px, 3vw, 38px);
+      letter-spacing: -0.03em;
+    }
+
+    .brand p{
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .pill a { color: rgba(255,255,255,0.82); text-decoration: none; }
+    .pill a:hover{ text-decoration: underline; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-top: 16px;
+    }
+
+    .inner { padding: 18px; }
+
+    .row{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .muted{ color: var(--muted); font-size: 13px; }
+
+    .actions{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button.btn{
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+    }
+
+    button.btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.085);
+      border-color: rgba(255,255,255,0.20);
+    }
+
+    button.btn.primary{
+      background: rgba(42, 107, 255, 0.38);
+      border-color: rgba(42, 107, 255, 0.55);
+    }
+
+    button.btn.primary:hover{
+      background: rgba(42, 107, 255, 0.48);
+      border-color: rgba(42, 107, 255, 0.70);
+    }
+
+    input.text{
+      background: rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.14);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      min-width: 320px;
+      max-width: 100%;
+    }
+
+    .dot {
+      width: 9px; height: 9px; border-radius: 999px;
+      background: rgba(120, 255, 160, 0.9);
+      box-shadow: 0 0 0 4px rgba(120,255,160,0.18);
+    }
+    .dot.off{ background: rgba(255,120,120,0.9); box-shadow: 0 0 0 4px rgba(255,120,120,0.18); }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.80);
+      user-select: none;
+    }
+
+    .reqTitle{
+      font-size: 18px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .reqNotes{
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: rgba(255,255,255,0.88);
+      white-space: pre-wrap;
+    }
+
+    .reqActions{
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .hint{
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .smallLink{ color: rgba(255,255,255,0.80); }
+    .smallLink:hover{ color: rgba(255,255,255,0.95); }
+
+    .hidden{ display:none !important; }
+
+    footer{
+      margin-top: 18px;
+      color: rgba(255,255,255,0.45);
+      font-size: 12px;
+      text-align: center;
+    }
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <div class="row" style="justify-content:space-between">
-      <div>
-        <h1 style="margin:0 0 6px 0;">Requests</h1>
-        <div class="muted">Pulled from D1 • completed items auto-hide after 7 days.</div>
+    <header>
+      <div class="brand">
+        <h1>Requests</h1>
+        <p>Pulled from D1 • completed items auto-hide after 7 days.</p>
       </div>
-      <div class="row">
-        <a href="/">← back</a>
-      </div>
-    </div>
 
-    <div class="card">
-      <div class="row">
-        <button id="refresh">Refresh</button>
-        <button id="toggleAdmin" class="secondary">Admin: off</button>
-        <input id="adminToken" placeholder="Admin token (only if you’re admin)" style="display:none; min-width:320px;">
+      <div class="pill">
+        <a href="/">← back</a>
+        <span style="opacity:.55">•</span>
+        <span id="pillText">Loading…</span>
       </div>
-      <div class="muted" id="statusLine" style="margin-top:10px;">Loading…</div>
-    </div>
+    </header>
+
+    <section class="card">
+      <div class="inner">
+        <div class="row">
+          <div class="actions">
+            <button class="btn primary" id="refresh">Refresh</button>
+            <button class="btn" id="toggleManager">Manager</button>
+            <label class="badge" title="Show completed requests too">
+              <input id="includeDone" type="checkbox" style="accent-color: #8fb5ff;" />
+              Show done
+            </label>
+          </div>
+
+          <div class="badge" id="mgrStatusBadge" title="Manager status">
+            <span class="dot off" id="mgrDot"></span>
+            <span id="mgrStatusText">Manager: logged out</span>
+          </div>
+        </div>
+
+        <div id="managerPanel" class="hidden" style="margin-top:14px;">
+          <div class="actions">
+            <input class="text" id="adminToken" placeholder="Admin token" autocomplete="off" />
+            <button class="btn" id="loginBtn">Log in</button>
+            <button class="btn" id="logoutBtn">Log out</button>
+          </div>
+          <div class="muted" style="margin-top:10px;">
+            Token is only sent in the
+            <code style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); padding:2px 6px; border-radius:8px; color: rgba(255,255,255,0.82);">X-Admin-Token</code>
+            header.
+          </div>
+        </div>
+
+        <div class="hint">
+          <span id="statusLine">Loading…</span>
+          <span><a class="smallLink" href="/api/requests" target="_blank" rel="noopener noreferrer">Open API ↗</a></span>
+        </div>
+      </div>
+    </section>
 
     <div id="list"></div>
+
+    <footer>Yodeling Tornado • Requests</footer>
   </div>
 
   <script>
     const elList = document.getElementById("list");
+    const pillText = document.getElementById("pillText");
     const statusLine = document.getElementById("statusLine");
-    const refreshBtn = document.getElementById("refresh");
-    const toggleAdminBtn = document.getElementById("toggleAdmin");
-    const adminTokenInput = document.getElementById("adminToken");
 
-    let adminMode = false;
+    const refreshBtn = document.getElementById("refresh");
+    const toggleManagerBtn = document.getElementById("toggleManager");
+    const managerPanel = document.getElementById("managerPanel");
+
+    const adminTokenInput = document.getElementById("adminToken");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const mgrDot = document.getElementById("mgrDot");
+    const mgrStatusText = document.getElementById("mgrStatusText");
+
+    const includeDoneCheckbox = document.getElementById("includeDone");
+
+    const LS_TOKEN = "YT_ADMIN_TOKEN";
+    const LS_LOGGED_IN = "YT_ADMIN_LOGGED_IN";
+    const LS_PANEL = "YT_MANAGER_PANEL_OPEN";
+    const LS_INCLUDE_DONE = "YT_INCLUDE_DONE";
+
+    let last = [];
+    let loggedIn = false;
 
     function fmtTime(ms) {
       try { return new Date(ms).toLocaleString(); } catch { return ""; }
     }
 
-    function getAdminToken() {
-      return localStorage.getItem("YT_ADMIN_TOKEN") || "";
-    }
-    function setAdminToken(v) {
-      localStorage.setItem("YT_ADMIN_TOKEN", v);
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
     }
 
-    toggleAdminBtn.onclick = () => {
-      adminMode = !adminMode;
-      toggleAdminBtn.textContent = adminMode ? "Admin: on" : "Admin: off";
-      adminTokenInput.style.display = adminMode ? "block" : "none";
-      adminTokenInput.value = getAdminToken();
+    function getToken(){ return (localStorage.getItem(LS_TOKEN) || "").trim(); }
+    function setToken(v){ localStorage.setItem(LS_TOKEN, (v || "").trim()); }
+
+    function setLoggedIn(v){
+      loggedIn = !!v;
+      localStorage.setItem(LS_LOGGED_IN, loggedIn ? "1" : "0");
+      mgrDot.classList.toggle("off", !loggedIn);
+      mgrStatusText.textContent = loggedIn ? "Manager: logged in" : "Manager: logged out";
       renderLast();
+    }
+
+    function isPanelOpen(){ return localStorage.getItem(LS_PANEL) === "1"; }
+    function setPanelOpen(v){ localStorage.setItem(LS_PANEL, v ? "1" : "0"); }
+
+    function includeDone(){ return includeDoneCheckbox.checked; }
+
+    function setIncludeDone(v){
+      includeDoneCheckbox.checked = !!v;
+      localStorage.setItem(LS_INCLUDE_DONE, includeDoneCheckbox.checked ? "1" : "0");
+    }
+
+    toggleManagerBtn.onclick = () => {
+      const open = !managerPanel.classList.contains("hidden");
+      const next = !open;
+      managerPanel.classList.toggle("hidden", !next);
+      setPanelOpen(next);
+      adminTokenInput.value = getToken();
     };
 
-    adminTokenInput.onchange = () => setAdminToken(adminTokenInput.value.trim());
+    includeDoneCheckbox.onchange = () => {
+      setIncludeDone(includeDoneCheckbox.checked);
+      load().catch(showError);
+    };
 
-    let last = [];
+    adminTokenInput.oninput = () => setToken(adminTokenInput.value);
+
+    logoutBtn.onclick = () => {
+      setLoggedIn(false);
+      statusLine.textContent = "Logged out.";
+    };
+
+    async function verifyToken(token){
+      const res = await fetch("/api/admin/verify", {
+        method: "GET",
+        headers: { "X-Admin-Token": token }
+      });
+      return res.ok;
+    }
+
+    loginBtn.onclick = async () => {
+      const token = getToken();
+      if (!token) { alert("Missing admin token"); return; }
+
+      statusLine.textContent = "Verifying token…";
+      const ok = await verifyToken(token);
+      if (!ok) {
+        setLoggedIn(false);
+        statusLine.textContent = "Invalid token (401).";
+        alert("Token rejected (401 Unauthorized). Double-check ADMIN_TOKEN in Pages secrets.");
+        return;
+      }
+
+      setLoggedIn(true);
+      statusLine.textContent = "Logged in ✓";
+    };
 
     async function load() {
       statusLine.textContent = "Loading…";
-      const res = await fetch("/api/requests");
+      pillText.textContent = "Loading…";
+
+      const url = includeDone() ? "/api/requests?includeDone=1" : "/api/requests";
+      const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
       if (!data.ok) throw new Error("API failed");
+
       last = data.results || [];
       renderLast();
+
+      const ts = new Date().toLocaleString();
       statusLine.textContent = `Loaded ${last.length} item(s).`;
+      pillText.textContent = `Updated: ${ts}`;
     }
 
     async function setStatus(id, status) {
-      const token = getAdminToken();
+      if (!loggedIn) { alert("Log in as manager first"); return; }
+      const token = getToken();
       if (!token) { alert("Missing admin token"); return; }
 
       const res = await fetch(`/api/requests/${encodeURIComponent(id)}/status`, {
@@ -99,58 +404,80 @@
       if (!res.ok) {
         const t = await res.text();
         alert(`Failed: ${res.status}\n${t}`);
+        if (res.status === 401) setLoggedIn(false);
         return;
       }
+
       await load();
     }
 
     function renderLast() {
       elList.innerHTML = "";
+
       if (!last.length) {
-        elList.innerHTML = `<div class="card">No open requests 🎉</div>`;
+        elList.innerHTML = `<section class="card"><div class="inner">No requests 🎉</div></section>`;
         return;
       }
 
       for (const r of last) {
-        const card = document.createElement("div");
+        const card = document.createElement("section");
         card.className = "card";
 
-        const badge = `<span class="badge">${r.status}</span>`;
-        const notes = r.notes ? `<div style="margin-top:8px;">${escapeHtml(r.notes)}</div>` : "";
-        const adminBtns = adminMode ? `
-          <div class="row" style="margin-top:12px;">
-            <button onclick="window.__setStatus('${r.id}','done')">Mark done</button>
-            <button class="secondary" onclick="window.__setStatus('${r.id}','open')">Re-open</button>
-          </div>` : "";
+        const statusBadge = `<span class="badge">${escapeHtml(r.status || "")}</span>`;
+        const notes = r.notes ? `<div class="reqNotes">${escapeHtml(r.notes)}</div>` : "";
+
+        const actions = loggedIn ? `
+          <div class="reqActions">
+            <button class="btn primary" onclick="window.__setStatus('${r.id}','done')">Mark done</button>
+            <button class="btn" onclick="window.__setStatus('${r.id}','open')">Re-open</button>
+          </div>
+        ` : "";
 
         card.innerHTML = `
-          <div class="row" style="justify-content:space-between;">
-            <div>
-              <div style="font-size:18px; font-weight:700;">${escapeHtml(r.title)}</div>
-              <div class="muted">Requested: <b>${escapeHtml(r.requested_date || "")}</b> • ${escapeHtml(fmtTime(r.requested_at || 0))}</div>
+          <div class="inner">
+            <div class="row">
+              <div>
+                <div class="reqTitle">${escapeHtml(r.title || "")}</div>
+                <div class="muted">Requested: <b>${escapeHtml(r.requested_date || "")}</b> • ${escapeHtml(fmtTime(r.requested_at || 0))}</div>
+              </div>
+              <div>${statusBadge}</div>
             </div>
-            <div>${badge}</div>
+            ${notes}
+            ${actions}
           </div>
-          ${notes}
-          ${adminBtns}
         `;
+
         elList.appendChild(card);
       }
     }
 
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, c => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-      }[c]));
+    function showError(err){
+      console.error(err);
+      statusLine.textContent = "Error loading requests.";
+      pillText.textContent = "Error";
+      elList.innerHTML = `<section class="card"><div class="inner">Error: ${escapeHtml(err.message)}</div></section>`;
     }
 
     window.__setStatus = setStatus;
-    refreshBtn.onclick = load;
+    refreshBtn.onclick = () => load().catch(showError);
 
-    load().catch(err => {
-      statusLine.textContent = "Error loading requests.";
-      elList.innerHTML = `<div class="card">Error: ${escapeHtml(err.message)}</div>`;
-    });
+    // Restore UI state
+    managerPanel.classList.toggle("hidden", !isPanelOpen());
+    adminTokenInput.value = getToken();
+
+    setIncludeDone(localStorage.getItem(LS_INCLUDE_DONE) === "1");
+
+    // Restore logged-in state (but always re-verify on load if we *think* we're logged in)
+    const rememberedLoggedIn = localStorage.getItem(LS_LOGGED_IN) === "1";
+    setLoggedIn(false);
+
+    (async () => {
+      if (rememberedLoggedIn) {
+        const token = getToken();
+        if (token && await verifyToken(token)) setLoggedIn(true);
+      }
+      await load();
+    })().catch(showError);
   </script>
 </body>
 </html>
