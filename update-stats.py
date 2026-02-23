@@ -11,7 +11,7 @@ from plexapi.server import PlexServer
 #   ANIME_LIBRARY  e.g. Anime (defaults to "Anime")
 
 BASEURL = os.environ.get("PLEX_BASEURL", "http://localhost:32400")
-TOKEN = os.environ.get("PLEX_TOKEN")
+TOKEN = os.environ.get("B7GVnEjCvGZXB9ymUZJ7")
 ANIME_LIBRARY = os.environ.get("ANIME_LIBRARY", "Anime")
 
 if not TOKEN:
