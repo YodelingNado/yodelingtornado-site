@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Requests • Yodeling Tornado</title>
+  <style>
+    body { font-family: system-ui, Arial; background:#0b0f16; color:#e7eefc; margin:0; }
+    .wrap { max-width: 900px; margin: 40px auto; padding: 0 16px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .card { background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); border-radius: 16px; padding: 14px 16px; margin: 12px 0; }
+    .muted { color: rgba(231,238,252,0.65); font-size: 14px; }
+    button { background:#2a6bff; color:white; border:0; padding:10px 12px; border-radius:12px; cursor:pointer; }
+    button.secondary { background: rgba(255,255,255,0.10); }
+    input { background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.14); color:#e7eefc; padding:10px 12px; border-radius:12px; }
+    a { color:#9cc0ff; }
+    .badge { display:inline-block; padding:4px 8px; border-radius: 999px; font-size:12px; background: rgba(255,255,255,0.10); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <h1 style="margin:0 0 6px 0;">Requests</h1>
+        <div class="muted">Pulled from D1 • completed items auto-hide after 7 days.</div>
+      </div>
+      <div class="row">
+        <a href="/">← back</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <button id="refresh">Refresh</button>
+        <button id="toggleAdmin" class="secondary">Admin: off</button>
+        <input id="adminToken" placeholder="Admin token (only if you’re admin)" style="display:none; min-width:320px;">
+      </div>
+      <div class="muted" id="statusLine" style="margin-top:10px;">Loading…</div>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <script>
+    const elList = document.getElementById("list");
+    const statusLine = document.getElementById("statusLine");
+    const refreshBtn = document.getElementById("refresh");
+    const toggleAdminBtn = document.getElementById("toggleAdmin");
+    const adminTokenInput = document.getElementById("adminToken");
+
+    let adminMode = false;
+
+    function fmtTime(ms) {
+      try { return new Date(ms).toLocaleString(); } catch { return ""; }
+    }
+
+    function getAdminToken() {
+      return localStorage.getItem("YT_ADMIN_TOKEN") || "";
+    }
+    function setAdminToken(v) {
+      localStorage.setItem("YT_ADMIN_TOKEN", v);
+    }
+
+    toggleAdminBtn.onclick = () => {
+      adminMode = !adminMode;
+      toggleAdminBtn.textContent = adminMode ? "Admin: on" : "Admin: off";
+      adminTokenInput.style.display = adminMode ? "block" : "none";
+      adminTokenInput.value = getAdminToken();
+      renderLast();
+    };
+
+    adminTokenInput.onchange = () => setAdminToken(adminTokenInput.value.trim());
+
+    let last = [];
+
+    async function load() {
+      statusLine.textContent = "Loading…";
+      const res = await fetch("/api/requests");
+      const data = await res.json();
+      if (!data.ok) throw new Error("API failed");
+      last = data.results || [];
+      renderLast();
+      statusLine.textContent = `Loaded ${last.length} item(s).`;
+    }
+
+    async function setStatus(id, status) {
+      const token = getAdminToken();
+      if (!token) { alert("Missing admin token"); return; }
+
+      const res = await fetch(`/api/requests/${encodeURIComponent(id)}/status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Token": token
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (!res.ok) {
+        const t = await res.text();
+        alert(`Failed: ${res.status}\n${t}`);
+        return;
+      }
+      await load();
+    }
+
+    function renderLast() {
+      elList.innerHTML = "";
+      if (!last.length) {
+        elList.innerHTML = `<div class="card">No open requests 🎉</div>`;
+        return;
+      }
+
+      for (const r of last) {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const badge = `<span class="badge">${r.status}</span>`;
+        const notes = r.notes ? `<div style="margin-top:8px;">${escapeHtml(r.notes)}</div>` : "";
+        const adminBtns = adminMode ? `
+          <div class="row" style="margin-top:12px;">
+            <button onclick="window.__setStatus('${r.id}','done')">Mark done</button>
+            <button class="secondary" onclick="window.__setStatus('${r.id}','open')">Re-open</button>
+          </div>` : "";
+
+        card.innerHTML = `
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div style="font-size:18px; font-weight:700;">${escapeHtml(r.title)}</div>
+              <div class="muted">Requested: <b>${escapeHtml(r.requested_date || "")}</b> • ${escapeHtml(fmtTime(r.requested_at || 0))}</div>
+            </div>
+            <div>${badge}</div>
+          </div>
+          ${notes}
+          ${adminBtns}
+        `;
+        elList.appendChild(card);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
+    }
+
+    window.__setStatus = setStatus;
+    refreshBtn.onclick = load;
+
+    load().catch(err => {
+      statusLine.textContent = "Error loading requests.";
+      elList.innerHTML = `<div class="card">Error: ${escapeHtml(err.message)}</div>`;
+    });
+  </script>
+</body>
+</html>

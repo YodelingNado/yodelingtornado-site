@@ -1,15 +1,13 @@
-# Run Plex stats updater
-py .\update_stats.py
+Set-Location "C:\Users\konno\OneDrive\Desktop\Code\yodelingtornado-site"
 
-# Commit + push if stats.json changed
-git add stats.json
+python .\update-stats.py
 
-# If nothing changed, don't commit
-$diff = git diff --cached --name-only
-if (-not $diff) {
-  Write-Host "No changes to commit."
-  exit 0
+git add .\stats.json
+
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) {
+  git commit -m "Update Plex stats"
+  git push
+} else {
+  Write-Host "No changes to commit (stats.json unchanged)."
 }
-
-git commit -m "Update Plex stats"
-git push
