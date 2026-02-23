@@ -1,0 +1,18 @@
+name = "yodelingtornado-requests"
+main = "src/worker.js"
+compatibility_date = "2026-02-22"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "yodelingtornado-requests"
+database_id = "PUT_YOUR_D1_ID_HERE"
+
+[vars]
+# Secret shared between Apps Script and the Worker intake endpoint:
+INTAKE_SECRET = "CHANGE_ME_TO_A_LONG_RANDOM_STRING"
+
+# Simple admin token for marking items done on the website:
+ADMIN_TOKEN = "CHANGE_ME_TOO"
+
+[triggers]
+crons = ["0 * * * *"] # hourly cleanup
