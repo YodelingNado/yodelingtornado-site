@@ -1,67 +1,49 @@
 import json
-import os
 from datetime import datetime
-from plexapi.server import PlexServer
+from pathlib import Path
 
-# REQUIRED ENV VARS:
-#   PLEX_BASEURL   e.g. http://localhost:32400
-#   PLEX_TOKEN     your X-Plex-Token
-#
-# OPTIONAL:
-#   ANIME_LIBRARY  e.g. Anime (defaults to "Anime")
+PLEX_ROOT = Path(r"D:\PlexMedia")
 
-BASEURL = os.environ.get("PLEX_BASEURL", "http://localhost:32400")
-TOKEN = os.environ.get("PLEX_TOKEN")
-ANIME_LIBRARY = os.environ.get("ANIME_LIBRARY", "Anime")
+MOVIES = PLEX_ROOT / "Movies"
+TV = PLEX_ROOT / "TV Shows"   # <-- match your naming style
+ANIME = PLEX_ROOT / "Anime"   # <-- matches your screenshot
 
-if not TOKEN:
-    raise SystemExit("Missing PLEX_TOKEN env var. Set it first (don’t hardcode it).")
+MEDIA_EXT = {".mp4", ".mkv", ".avi", ".mov", ".m4v", ".ts", ".webm"}
 
-plex = PlexServer(BASEURL, TOKEN)
-
-def count_movies():
-    # Count items in libraries of type 'movie'
-    total = 0
-    for section in plex.library.sections():
-        if section.type == "movie":
-            # all() can be heavy on massive libraries; size is usually fine
-            total += section.totalSize
-    return total
-
-def count_shows_and_episodes():
-    shows = 0
-    episodes = 0
-    for section in plex.library.sections():
-        if section.type == "show":
-            shows += section.totalSize
-            # total episodes: sum episode count per show (fast-ish and accurate)
-            # For very large libraries this can take a bit; still usually OK.
-            for show in section.all():
-                episodes += getattr(show, "leafCount", 0)
-    return shows, episodes
-
-def count_anime_series():
-    # If you have a dedicated Anime library (type show), this is perfect.
-    # If you don’t, we can upgrade later to “anime by label/genre” logic.
-    try:
-        sec = plex.library.section(ANIME_LIBRARY)
-        if sec.type != "show":
-            return 0
-        return sec.totalSize
-    except Exception:
+def count_media_files_recursive(folder: Path) -> int:
+    if not folder.exists():
         return 0
+    return sum(
+        1 for f in folder.rglob("*")
+        if f.is_file() and f.suffix.lower() in MEDIA_EXT
+    )
+
+def count_top_level_folders(folder: Path) -> int:
+    if not folder.exists():
+        return 0
+    return sum(1 for item in folder.iterdir() if item.is_dir())
+
+movies_files = count_media_files_recursive(MOVIES)
+tv_episode_files = count_media_files_recursive(TV)
+anime_episode_files = count_media_files_recursive(ANIME)
 
 stats = {
-    "movies": count_movies(),
-    "shows": None,
-    "episodes": None,
-    "anime_series": count_anime_series(),
+    "movies": movies_files,
+
+    # series counts
+    "shows": count_top_level_folders(TV),
+    "anime_series": count_top_level_folders(ANIME),
+
+    # BIG counter: playable video files across TV + Anime + Movies
+    "episodes": movies_files + tv_episode_files + anime_episode_files,
+
     "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
 }
 
-shows, episodes = count_shows_and_episodes()
-stats["shows"] = shows
-stats["episodes"] = episodes
+# quick sanity output
+print("MOVIES:", MOVIES, "exists:", MOVIES.exists(), "files:", movies_files)
+print("TV:", TV, "exists:", TV.exists(), "episode-files:", tv_episode_files, "series-folders:", stats["shows"])
+print("ANIME:", ANIME, "exists:", ANIME.exists(), "episode-files:", anime_episode_files, "series-folders:", stats["anime_series"])
 
 with open("stats.json", "w", encoding="utf-8") as f:
     json.dump(stats, f, indent=2)
